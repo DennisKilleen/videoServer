@@ -12,10 +12,10 @@ TODO: After running the project direct your browser to the ip with the port numb
 3. Commit your changes: `git commit -am 'Add some feature'`
 4. Push to the branch: `git push origin my-new-feature`
 5. Submit a pull request :D
+
 ## History
 TODO: Initially build on 23/1/2016 includes sample media with playback
-## Credits
-TODO: Write credits
+
 ## License
 TODO: Free open license. This project is open-source and should be used for anything commercial.
 ]]></content>
