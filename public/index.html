@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+
+	<head>
+
+		<meta charset="utf-8">
+		<meta http-equiv="X-UA-Compatible" content="IE=edge">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta name="description" content="Video Server">
+		<meta name="author" content="Dennis Killeen">
+		
+		<title>Video Server</title>
+		
+		<!-- Bootstrap css -->
+		<link rel="stylesheet" href="css/bootstrap.min.css" type="text/css">
+		<link rel="stylesheet" href="css/animate.min.css" type="text/css">
+		<link rel="stylesheet" href="css/creative.css" type="text/css">
+		
+		<!-- Bootstrap Core JavaScript -->
+		<script type="text/javascript" src="js/jquery.js"></script>
+		<script src="js/bootstrap.min.js"></script>
+		
+		<script type="text/javascript" src="js/socket.js"></script>
+		<script type="text/javascript" src="js/projekktor.min.js"></script> 
+		<script type="text/javascript">
+		var socket = io('http://'+location.hostname+':9000'); //set the socket port up to redirect to the server ip
+		
+		var temp=[];//variable needed for button injections 
+		
+		$(document).ready(function()
+		{
+			$("#player").hide(); //hide the player until the user makes a choice
+			$("#backToFiles").hide(); //hide the button to restart the selection process
+			$("#folders").show(); //show the options the user has
+		});
+		$("#folders").click(function() 
+		{
+			
+			projekktor('#player_a', 
+			{
+				volume: 0.8,
+				playerFlashMP4: 'http://www.yourdomain.com/StrobeMediaPlayback.swf',
+				playerFlashMP3: 'http://www.yourdomain.com/StrobeMediaPlayback.swf'
+			}); //load the player when the user pushes the button
+		});
+		
+		function folders()
+		{
+			socket.emit("GET_FOLDERS", {"source": "public/media/"}); //get the folders from the server
+			$("#folders").hide(); //hide the button to get folders
+		}
+		
+		socket.on("RETURN_GET_FOLDERS", function(data)
+		{
+			temp = data.data; //get the data from the socket
+			for(var i = 0; i < temp.length;i++) 
+			{
+				var $input = $('<button id="'+temp[i]+'" class="btn btn-primary btn-xl page-scroll" onclick="placeholderFolder(this.id);">'+temp[i]+'</button>'); //inject buttons to the page with the names of the folder
+				$input.appendTo( $('#buttons')); //add the buttons to the page
+			}
+		});
+		
+		socket.on("RETURN_GET_FILES", function(data)
+		{
+			
+			temp=[];
+			$('#buttons').empty(); //empty the buttons div
+			temp = data.data; //get the data from the socket
+			for(var i = 0; i < temp.length;i++)
+			{
+				var $input = $('<button id="'+temp[i]+'" class="btn btn-primary btn-xl page-scroll" onclick="placeholderFile(this.id);">'+temp[i].substring(22, temp[i].length)+'</button>');//inject buttons to the page with the names of the files
+				$input.appendTo( $('#buttons')); //add the buttons to the page
+			}
+		});
+		
+		function placeholderFolder(id)
+		{
+			for(var i = 0; i<temp.length;i++)
+			{
+				if(temp[i] == id)
+				{
+					socket.emit("GET_FILES", {"folder": id}); //get the files associated with the folder id
+				}
+			}
+		}
+		
+		function placeholderFile(id)
+		{
+			$("#buttons").hide(); //hide the buttons menu with the shows
+			$("#backToFiles").show(); // show the button to restart the selection process
+			$("#player").show(); //show the player
+			document.getElementById("player_a").src = id.replace("/public", ""); //set the source for the player
+		}
+		
+		function backToFiles()
+		{
+			$("#buttons").show(); // show the files previously selected
+			$("#player").hide(); //hide the player
+			$("#backToFiles").hide(); //hide the back to files button
+		}
+		
+	</script> 
+		<!-- Custom Fonts -->
+		<link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+		<link href='http://fonts.googleapis.com/css?family=Merriweather:400,300,300italic,400italic,700,700italic,900,900italic' rel='stylesheet' type='text/css'>
+		<link rel="stylesheet" href="font-awesome/css/font-awesome.min.css" type="text/css">
+		
+		<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
+		<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+		<!--[if lt IE 9]>
+			<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+			<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+	</head>
+	<body id="page-top">
+		<nav id="mainNav" class="navbar navbar-default navbar-fixed-top">
+		<div class="container-fluid">
+            <!-- Brand and toggle get grouped for better mobile display -->
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand page-scroll" href="#page-top">Video Server</a>
+            </div>
+
+            <!-- Collect the nav links, forms, and other content for toggling -->
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav navbar-right">
+                    <li>
+                        <a class="page-scroll" href="#idea">Idea</a>
+                    </li>
+                    <li>
+                        <a class="page-scroll" href="#watch">Watch Video</a>
+                    </li>
+					 <li>
+                        <a class="page-scroll" href="#upload">Upload Video</a>
+                    </li>
+                    <li>
+                        <a class="page-scroll" href="#delete">Delete Video</a>
+                    </li>
+                </ul>
+            </div>
+            <!-- /.navbar-collapse -->
+        </div>
+        <!-- /.container-fluid -->
+    </nav>
+	
+	 <header>
+        <div class="header-content">
+            <div id="video" class="header-content-inner">
+                <h1>A self hosted video server for home with multiple devices</h1>
+                <hr>
+                <p>To view on other devices ensure the devices are on the same wifi. In a browser type the address stated after installation</p>
+                <a href="#idea" class="btn btn-primary btn-xl page-scroll">Watch videos</a>
+            </div>
+        </div>
+    </header>
+	
+	<!-- //video player -->
+	 <section class="bg-primary" id="idea">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 text-center">
+                    <h2 class="section-heading">Pick your file</h2>
+                    <hr class="light">
+					<div id="folders">
+						<button class="btn btn-primary btn-xl page-scroll" onclick="folders();">Get folders</button>
+					</div>
+					<center>
+						<div id="buttons">
+						</div>
+					</center>
+					<div id="player"> <!-- Outer Div -->
+						<center>
+							<video id="player_a" class="projekktor" poster="images/desk.jpg" title="this is projekktor" width="80%" height="80%" controls>
+								<source src="" type="video/mp4" />
+							</video>
+						</center>
+					</div> <!-- Outer Div End -->
+					<button id="backToFiles"class="btn btn-primary btn-xl page-scroll" onclick="backToFiles();">Back to files</button>
+                </div>
+            </div>
+        </div>
+    </section>
+	
+	<section id="upload">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-12 text-center">
+                    <h2 class="section-heading">Upload Video</h2>
+					<p> 
+						need to work on this
+					</p>
+            </div>
+        </div>
+    </section>
+	
+	<section class="bg-primary" id="delete">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8 col-lg-offset-2 text-center">
+                    <h2 class="section-heading">Delete video / folder</h2>
+                    <p>
+						need to work on this 
+					</p>
+                </div>
+            </div>
+        </div>
+    </section>
+	</body>
+</html>
