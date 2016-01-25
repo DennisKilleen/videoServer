@@ -90,7 +90,8 @@ io.on('connect', function(socket)
 			});
 	});
 	
-	socket.on('Upload', function (data){
+	socket.on('Upload', function (data)
+	{
 			var Name = data['Name'];
 			Files[Name]['Downloaded'] += data['Data'].length;
 			Files[Name]['Data'] += data['Data'];
@@ -98,7 +99,7 @@ io.on('connect', function(socket)
 			{
 				fs.write(Files[Name]['Handler'], Files[Name]['Data'], null, 'Binary', function(err, Writen){
 					var inp = fs.createReadStream("Temp/" + Name);
-					var out = fs.createWriteStream("Video/" + Name);
+					var out = fs.createWriteStream("public/media/Movies/" + Name);
 					util.pump(inp, out, function(){
 						fs.unlink("Temp/" + Name, function () { //This Deletes The Temporary File
 							//exec("ffmpeg -i Video/" + Name  + " -ss 01:30 -r 1 -an -vframes 1 -f mjpeg Video/" + Name  + ".jpg", function(err){
