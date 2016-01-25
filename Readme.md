@@ -3,10 +3,10 @@
 This project is designed for people who have a lot of media files and wish to share them throughout a local network without the use of a usb. It is a server built on node.js and uses a simple html front end. This project will host media to all devices on a local network.
 
 ## Installation
-To run firstly install Node.js on whichever operating system you use. Then run the command "npm install" after you cd to the folder in the terminal. Next run the command "node app.js" and go to the localhost:8080 on the browser of your choice. For devices that the softwre is not onstalled on use the ip address of the machine ruinng the video server for example: '192.196.2.103:8080' and the page should show up. These external devices should be connected to the same wifi to enable the cross device use. 
+To run firstly install Node.js on whichever operating system you use. Then run the command "npm install" after you cd to the folder in the terminal. Next run the command "node app.js" and go to the localhost:9000 on the browser of your choice. For devices that the softwre is not onstalled on use the ip address of the machine ruinng the video server for example: '192.196.2.103:9000' and the page should show up. These external devices should be connected to the same wifi to enable the cross device use. 
 
 ## Usage
-After running the project direct your browser to the ip with the port number at :8080
+After running the project direct your browser to the ip with the port number at :9000
 
 ## Contributing
 1. Fork it!
