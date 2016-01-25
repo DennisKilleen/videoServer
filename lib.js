@@ -17,6 +17,7 @@ videoAPI.prototype.getFolders = function(srcpath)
   });
 }
 
+//get a list of files
 videoAPI.prototype.getFiles = function(dir, files_)
 {
     files_ = files_ || [];

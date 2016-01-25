@@ -49,9 +49,6 @@
 				<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
 					<ul class="nav navbar-nav navbar-right">
 						<li>
-							<a class="page-scroll" href="#idea">Idea</a>
-						</li>
-						<li>
 							<a class="page-scroll" href="#watch">Watch Video</a>
 						</li>
 						 <li>
@@ -76,14 +73,14 @@
 			</div>
 		</header>
 		<!-- video player div -->
-		 <section class="bg-primary" id="idea">
+		 <section class="bg-primary" id="watch">
 			<div class="container">
 				<div class="row">
 					<div class="col-lg-8 col-lg-offset-2 text-center">
-						<h2 class="section-heading">Pick your file</h2>
+						<h2 class="section-heading">Web Player</h2>
 						<hr class="light">
 						<div id="folders">
-							<button class="btn btn-primary btn-xl page-scroll" onclick="folders();">Get folders</button>
+							<button class="btn btn-primary btn-xl page-scroll" onclick="folders();">Search Media</button>
 						</div>
 						<center>
 							<div id="buttons">
@@ -106,17 +103,14 @@
 			<div class="container">
 				<div class="row">
 					<div class="col-lg-12 text-center">
-						<h2 class="section-heading">Upload Video</h2>
-						<center>
-							<div id="UploadBox">
-								<h2>Video Uploader</h2>
-								<span id='UploadArea'>
-									<label for="FileBox">Choose A File: </label><input type="file" id="FileBox"><br>
-									<label for="NameBox">Name: </label><input type="text" id="NameBox"><br>
-									<button	type='button' id='UploadButton' class='Button'>Upload</button>
-								</span>
-							</div>
-						</center>
+						<h2 class="section-heading">Video Uploader</h2>
+						<span id='UploadArea' class="UploadArea">
+							<center>
+								<label for="FileBox">Choose A File: </label><input type="file" id="FileBox"><br>
+								<label for="NameBox">Name: </label><input type="text" id="NameBox"><br>
+							</center>
+							<button	type='button' id='UploadButton' class='btn btn-primary btn-xl page-scroll'>Upload</button>
+						</span>
 					</div>
 				</div>
 			</div>

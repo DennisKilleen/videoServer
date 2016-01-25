@@ -136,14 +136,22 @@ function getFolders(data, socket)
 function getFiles(data, socket)
 {
 	var fileList = vid.getFiles('./public/media/'+data.folder); //get the files that are inside the selected folders
-	for(var i = 0; i < fileList.length; i++)
+	if(fileList.length > 0)
 	{
-		if(fileList[i].slice(-3) != "mkv") //find the files that dont end with '.mkv'
+		for(var i = 0; i < fileList.length; i++)
 		{
-			files.push(fileList[i]); //add the files remaining to the files list
+			if(fileList[i].slice(-3) != "mkv") //find the files that dont end with '.mkv'
+			{
+				files.push(fileList[i]); //add the files remaining to the files list
+			}
 		}
+		socket.emit(CMD_RETURN_GET_FILES, {"data": files});
+		files.splice(0,files.length);
 	}
-	socket.emit(CMD_RETURN_GET_FILES, {"data": files});
+	else
+	{
+		socket.emit(CMD_RETURN_GET_FILES, {"data": "Empty directory"});
+	}
 }
 
 //set the server listening
