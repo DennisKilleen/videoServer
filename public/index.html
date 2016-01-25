@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 	<head>
 
 		<meta charset="utf-8">
@@ -8,177 +7,24 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<meta name="description" content="Video Server">
 		<meta name="author" content="Dennis Killeen">
-		
+		<!-- Page Titile -->
 		<title>Video Server</title>
-		
 		<!-- Bootstrap css -->
 		<link rel="stylesheet" href="css/bootstrap.min.css" type="text/css">
 		<link rel="stylesheet" href="css/animate.min.css" type="text/css">
 		<link rel="stylesheet" href="css/creative.css" type="text/css">
-		
 		<!-- Bootstrap Core JavaScript -->
 		<script type="text/javascript" src="js/jquery.js"></script>
 		<script src="js/bootstrap.min.js"></script>
-		
+		<!-- JavaScript files -->
 		<script type="text/javascript" src="js/socket.js"></script>
 		<script type="text/javascript" src="js/projekktor.min.js"></script> 
-		<script type="text/javascript">
-		
-		
-		var socket = io('http://'+location.hostname+':9001'); //set the socket port up to redirect to the server ip
-		
-		window.addEventListener("load", Ready); 
-			
-		function Ready(){ 
-			if(window.File && window.FileReader){ //These are the necessary HTML5 objects the we are going to use 
-				document.getElementById('UploadButton').addEventListener('click', StartUpload);  
-				document.getElementById('FileBox').addEventListener('change', FileChosen);
-			}
-			else
-			{
-				document.getElementById('UploadArea').innerHTML = "Your Browser Doesn't Support The File API Please Update Your Browser";
-			}
-		}
-		var SelectedFile;
-		function FileChosen(evnt) {
-			SelectedFile = evnt.target.files[0];
-			document.getElementById('NameBox').value = SelectedFile.name;
-		}
-		var FReader;
-			var Name;
-			function StartUpload(){
-				if(document.getElementById('FileBox').value != "")
-				{
-					FReader = new FileReader();
-					Name = document.getElementById('NameBox').value;
-					var Content = "<span id='NameArea'>Uploading " + SelectedFile.name + " as " + Name + "</span>";
-					Content += '<div id="ProgressContainer"><div id="ProgressBar"></div></div><span id="percent">50%</span>';
-					Content += "<span id='Uploaded'> - <span id='MB'>0</span>/" + Math.round(SelectedFile.size / 1048576) + "MB</span>";
-					document.getElementById('UploadArea').innerHTML = Content;
-					FReader.onload = function(evnt){
-						socket.emit('Upload', { 'Name' : Name, Data : evnt.target.result });
-					}
-					socket.emit('Start', { 'Name' : Name, 'Size' : SelectedFile.size });
-				}
-				else
-				{
-					alert("Please Select A File");
-				}
-			}
-			
-			socket.on('MoreData', function (data){
-				UpdateBar(data['Percent']);
-				var Place = data['Place'] * 524288; //The Next Blocks Starting Position
-				var NewFile; //The Variable that will hold the new Block of Data
-				if(SelectedFile.webkitSlice) 
-					NewFile = SelectedFile.webkitSlice(Place, Place + Math.min(524288, (SelectedFile.size-Place)));
-				else
-					NewFile = SelectedFile.slice(Place, Place + Math.min(524288, (SelectedFile.size-Place)));
-				FReader.readAsBinaryString(NewFile);
-			});
-			function UpdateBar(percent){
-				document.getElementById('ProgressBar').style.width = percent + '%';
-				document.getElementById('percent').innerHTML = (Math.round(percent*100)/100) + '%';
-				var MBDone = Math.round(((percent/100.0) * SelectedFile.size) / 1048576);
-				document.getElementById('MB').innerHTML = MBDone;
-			}
-			
-			var Path = "http://localhost/";
-			
-			socket.on('Done', function (data){
-				var Content = "Video Successfully Uploaded !!"
-				Content += "<img id='Thumb' src='" + Path + data['Image'] + "' alt='" + Name + "'><br>";
-				Content += "<button	type='button' name='Upload' value='' id='Restart' class='Button'>Upload Another</button>";
-				document.getElementById('UploadArea').innerHTML = Content;
-				document.getElementById('Restart').addEventListener('click', Refresh);
-				document.getElementById('UploadBox').style.width = '270px';
-				document.getElementById('UploadBox').style.height = '270px';
-				document.getElementById('UploadBox').style.textAlign = 'center';
-				document.getElementById('Restart').style.left = '20px';
-			});
-			function Refresh(){
-				location.reload(true);
-			}
-		
-		var temp=[];//variable needed for button injections 
-		
-		$(document).ready(function()
-		{
-			$("#player").hide(); //hide the player until the user makes a choice
-			$("#backToFiles").hide(); //hide the button to restart the selection process
-			$("#folders").show(); //show the options the user has
-		});
-		$("#folders").click(function() 
-		{
-			
-			projekktor('#player_a', 
-			{
-				volume: 0.8,
-				playerFlashMP4: 'http://www.yourdomain.com/StrobeMediaPlayback.swf',
-				playerFlashMP3: 'http://www.yourdomain.com/StrobeMediaPlayback.swf'
-			}); //load the player when the user pushes the button
-		});
-		
-		function folders()
-		{
-			socket.emit("GET_FOLDERS", {"source": "public/media/"}); //get the folders from the server
-			$("#folders").hide(); //hide the button to get folders
-		}
-		
-		socket.on("RETURN_GET_FOLDERS", function(data)
-		{
-			temp = data.data; //get the data from the socket
-			for(var i = 0; i < temp.length;i++) 
-			{
-				var $input = $('<button id="'+temp[i]+'" class="btn btn-primary btn-xl page-scroll" onclick="placeholderFolder(this.id);">'+temp[i]+'</button>'); //inject buttons to the page with the names of the folder
-				$input.appendTo( $('#buttons')); //add the buttons to the page
-			}
-		});
-		
-		socket.on("RETURN_GET_FILES", function(data)
-		{
-			
-			temp=[];
-			$('#buttons').empty(); //empty the buttons div
-			temp = data.data; //get the data from the socket
-			for(var i = 0; i < temp.length;i++)
-			{
-				var $input = $('<button id="'+temp[i]+'" class="btn btn-primary btn-xl page-scroll" onclick="placeholderFile(this.id);">'+temp[i].substring(22, temp[i].length)+'</button>');//inject buttons to the page with the names of the files
-				$input.appendTo( $('#buttons')); //add the buttons to the page
-			}
-		});
-		
-		function placeholderFolder(id)
-		{
-			for(var i = 0; i<temp.length;i++)
-			{
-				if(temp[i] == id)
-				{
-					socket.emit("GET_FILES", {"folder": id}); //get the files associated with the folder id
-				}
-			}
-		}
-		
-		function placeholderFile(id)
-		{
-			$("#buttons").hide(); //hide the buttons menu with the shows
-			$("#backToFiles").show(); // show the button to restart the selection process
-			$("#player").show(); //show the player
-			document.getElementById("player_a").src = id.replace("/public", ""); //set the source for the player
-		}
-		
-		function backToFiles()
-		{
-			$("#buttons").show(); // show the files previously selected
-			$("#player").hide(); //hide the player
-			$("#backToFiles").hide(); //hide the back to files button
-		}
-	</script> 
+		<script type="text/javascript" src="js/index.js"></script> 
 		<!-- Custom Fonts -->
 		<link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
 		<link href='http://fonts.googleapis.com/css?family=Merriweather:400,300,300italic,400italic,700,700italic,900,900italic' rel='stylesheet' type='text/css'>
+		<!-- Style sheets -->
 		<link rel="stylesheet" href="font-awesome/css/font-awesome.min.css" type="text/css">
-		
 		<!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
 		<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
 		<!--[if lt IE 9]>
@@ -187,88 +33,80 @@
 		<![endif]-->
 	</head>
 	<body id="page-top">
-		<nav id="mainNav" class="navbar navbar-default navbar-fixed-top">
-		<div class="container-fluid">
-            <!-- Brand and toggle get grouped for better mobile display -->
-            <div class="navbar-header">
-                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a class="navbar-brand page-scroll" href="#page-top">Video Server</a>
-            </div>
-
-            <!-- Collect the nav links, forms, and other content for toggling -->
-            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-                <ul class="nav navbar-nav navbar-right">
-                    <li>
-                        <a class="page-scroll" href="#idea">Idea</a>
-                    </li>
-                    <li>
-                        <a class="page-scroll" href="#watch">Watch Video</a>
-                    </li>
-					 <li>
-                        <a class="page-scroll" href="#upload">Upload Video</a>
-                    </li>
-                    <li>
-                        <a class="page-scroll" href="#delete">Delete Video</a>
-                    </li>
-                </ul>
-            </div>
-            <!-- /.navbar-collapse -->
-        </div>
-        <!-- /.container-fluid -->
-    </nav>
-	
-	 <header>
-        <div class="header-content">
-            <div id="video" class="header-content-inner">
-                <h1>A self hosted video server for home with multiple devices</h1>
-                <hr>
-                <p>To view on other devices ensure the devices are on the same wifi. In a browser type the address stated after installation</p>
-                <a href="#idea" class="btn btn-primary btn-xl page-scroll">Watch videos</a>
-            </div>
-        </div>
-    </header>
-	
-	<!-- //video player -->
-	 <section class="bg-primary" id="idea">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-8 col-lg-offset-2 text-center">
-                    <h2 class="section-heading">Pick your file</h2>
-                    <hr class="light">
-					<div id="folders">
-						<button class="btn btn-primary btn-xl page-scroll" onclick="folders();">Get folders</button>
-					</div>
-					<center>
-						<div id="buttons">
+			<nav id="mainNav" class="navbar navbar-default navbar-fixed-top">
+			<div class="container-fluid">
+				<!-- Brand and toggle get grouped for better mobile display -->
+				<div class="navbar-header">
+					<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+						<span class="sr-only">Toggle navigation</span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</button>
+					<a class="navbar-brand page-scroll" href="#page-top">Video Server</a>
+				</div>
+				<!-- Collect the nav links, forms, and other content for toggling -->
+				<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+					<ul class="nav navbar-nav navbar-right">
+						<li>
+							<a class="page-scroll" href="#idea">Idea</a>
+						</li>
+						<li>
+							<a class="page-scroll" href="#watch">Watch Video</a>
+						</li>
+						 <li>
+							<a class="page-scroll" href="#upload">Upload Video</a>
+						</li>
+						<li>
+							<a class="page-scroll" href="#delete">Delete Video</a>
+						</li>
+					</ul>
+				</div> <!-- /.navbar-collapse -->
+			</div>
+		</nav>
+		<!-- First viewable div -->
+		 <header>
+			<div class="header-content">
+				<div id="video" class="header-content-inner">
+					<h1>A self hosted video server for home with multiple devices</h1>
+					<hr>
+					<p>To view on other devices ensure the devices are on the same wifi. In a browser type the address stated after installation</p>
+					<a href="#idea" class="btn btn-primary btn-xl page-scroll">Watch videos</a>
+				</div>
+			</div>
+		</header>
+		<!-- video player div -->
+		 <section class="bg-primary" id="idea">
+			<div class="container">
+				<div class="row">
+					<div class="col-lg-8 col-lg-offset-2 text-center">
+						<h2 class="section-heading">Pick your file</h2>
+						<hr class="light">
+						<div id="folders">
+							<button class="btn btn-primary btn-xl page-scroll" onclick="folders();">Get folders</button>
 						</div>
-					</center>
-					<div id="player"> <!-- Outer Div -->
 						<center>
-							<video id="player_a" class="projekktor" poster="images/desk.jpg" title="this is projekktor" width="80%" height="80%" controls>
-								<source src="" type="video/mp4" />
-							</video>
+							<div id="buttons">
+							</div>
 						</center>
-					</div> <!-- Outer Div End -->
-					<button id="backToFiles"class="btn btn-primary btn-xl page-scroll" onclick="backToFiles();">Back to files</button>
-                </div>
-            </div>
-        </div>
-    </section>
-	
-	<section id="upload">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-12 text-center">
-                    <h2 class="section-heading">Upload Video</h2>
-						<!--<form method="post" enctype="multipart/form-data" action="/upload">
-								<input type="file" value="file">
-								<input type="submit" value="Submit">
-						</form>-->
+						<div id="player"> <!-- Outer Div -->
+							<center>
+								<video id="player_a" class="projekktor" poster="images/desk.jpg" title="this is projekktor" width="80%" height="80%" controls>
+									<source src="" type="video/mp4" />
+								</video>
+							</center>
+						</div> 
+						<button id="backToFiles"class="btn btn-primary btn-xl page-scroll" onclick="backToFiles();">Back to files</button>
+					</div>
+				</div>
+			</div>
+		</section>
+		<!-- Upload div -->
+		<section id="upload">
+			<div class="container">
+				<div class="row">
+					<div class="col-lg-12 text-center">
+						<h2 class="section-heading">Upload Video</h2>
 						<center>
 							<div id="UploadBox">
 								<h2>Video Uploader</h2>
@@ -279,23 +117,22 @@
 								</span>
 							</div>
 						</center>
-					<p>
-					</p>
-            </div>
-        </div>
-    </section>
-	
-	<section class="bg-primary" id="delete">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-8 col-lg-offset-2 text-center">
-                    <h2 class="section-heading">Delete video / folder</h2>
-                    <p>
-						need to work on this 
-					</p>
-                </div>
-            </div>
-        </div>
-    </section>
+					</div>
+				</div>
+			</div>
+		</section>
+		<!-- Deleting div -->
+		<section class="bg-primary" id="delete">
+			<div class="container">
+				<div class="row">
+					<div class="col-lg-8 col-lg-offset-2 text-center">
+						<h2 class="section-heading">Delete video / folder</h2>
+						<p>
+							need to work on this 
+						</p>
+					</div>
+				</div>
+			</div>
+		</section>
 	</body>
 </html>

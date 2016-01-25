@@ -10,7 +10,6 @@ var logger 			= require('morgan');
 var cookieParser 	= require('cookie-parser');
 var bodyParser		= require('body-parser');
 var routes	 		= require('./routes/index');
-var users 			= require('./routes/users');
 var os 				= require('os');
 var videoAPI		= require('./lib.js');
 var multer 			= require('multer');
@@ -19,11 +18,10 @@ var fs 				= require('fs');
 var port 			= 9000;
 var app 			= express();
 var server 			= require('http').createServer(app);
-var exec = require('child_process').execFile;
+var exec 			= require('child_process').execFile;
 var io				= require('socket.io')(9001);
-
 var files 			= [];
-var Files = {};
+var Files 			= {};
 
 //set up the app handlers
 app.use(favicon(__dirname + '/public/tv.ico'));
@@ -35,7 +33,6 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', routes);
-app.use('/users', users);
 server.listen(port);
 
 //Commands
@@ -135,7 +132,7 @@ function getFolders(data, socket)
 	socket.emit(CMD_RETURN_GET_FOLDERS, {"data": folderList}); //emit the data back to the html page for displaying
 }
 
-
+//the getFiles function searches the current directory and returns the files there
 function getFiles(data, socket)
 {
 	var fileList = vid.getFiles('./public/media/'+data.folder); //get the files that are inside the selected folders
@@ -149,9 +146,10 @@ function getFiles(data, socket)
 	socket.emit(CMD_RETURN_GET_FILES, {"data": files});
 }
 
-server.listen(port, function () //set the server listening
+//set the server listening
+server.listen(port, function () 
 {
-  console.log('Server listening at port %d', port); //display on the prompt that the server is running
+	console.log('\x1b[33m', 'Listening on port :'+ port ,'\x1b[0m'); //display on the prompt that the server is running
 });
 
 module.exports = app;
