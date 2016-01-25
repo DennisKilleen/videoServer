@@ -11,13 +11,19 @@ var cookieParser 	= require('cookie-parser');
 var bodyParser		= require('body-parser');
 var routes	 		= require('./routes/index');
 var users 			= require('./routes/users');
-var os 		= require('os');
+var os 				= require('os');
 var videoAPI		= require('./lib.js');
-var port 			= 8080;
+var multer 			= require('multer');
+var util 			= require('util');
+var fs 				= require('fs');
+var port 			= 9000;
 var app 			= express();
 var server 			= require('http').createServer(app);
-var io				= require('socket.io')(9000);
+var exec = require('child_process').execFile;
+var io				= require('socket.io')(9001);
+
 var files 			= [];
+var Files = {};
 
 //set up the app handlers
 app.use(favicon(__dirname + '/public/tv.ico'));
@@ -32,13 +38,13 @@ app.use('/', routes);
 app.use('/users', users);
 server.listen(port);
 
-
 //Commands
 var CMD_GET_FOLDERS 		= "GET_FOLDERS";
 var CMD_GET_FILES 			= "GET_FILES";
 var CMD_RETURN_GET_IP 		= "RETURN_GET_IP";
 var CMD_RETURN_GET_FOLDERS 	= "RETURN_GET_FOLDERS";
 var CMD_RETURN_GET_FILES 	= "RETURN_GET_FILES";
+var CMD_UPLOADED_FILES		= "UPLOADED_FILES";
 
 //set up the object used
 var vid 					= new videoAPI(os.type());
@@ -48,6 +54,7 @@ var vid 					= new videoAPI(os.type());
 //the set up for the sockets
 io.on('connect', function(socket)
 {
+	
 	socket.on(CMD_GET_FOLDERS, function(data) //listen for the socket
 	{
 		getFolders(data, socket); //move the data and the socket handler to the function 
@@ -56,8 +63,70 @@ io.on('connect', function(socket)
 	{
 		getFiles(data, socket); //move the data and the socket handler to the function 
 	});
+	socket.on('Start', function (data) { //data contains the variables that we passed through in the html file
+			var Name = data['Name'];
+			Files[Name] = {  //Create a new Entry in The Files Variable
+				FileSize : data['Size'],
+				Data	 : "",
+				Downloaded : 0
+			}
+			var Place = 0;
+			try{
+				var Stat = fs.statSync('Temp/' +  Name);
+				if(Stat.isFile())
+				{
+					Files[Name]['Downloaded'] = Stat.size;
+					Place = Stat.size / 524288;
+				}
+			}
+	  		catch(er){} //It's a New File
+			fs.open("Temp/" + Name, 'a', 0755, function(err, fd){
+				if(err)
+				{
+					console.log(err);
+				}
+				else
+				{
+					Files[Name]['Handler'] = fd; //We store the file handler so we can write to it later
+					socket.emit('MoreData', { 'Place' : Place, Percent : 0 });
+				}
+			});
+	});
+	
+	socket.on('Upload', function (data){
+			var Name = data['Name'];
+			Files[Name]['Downloaded'] += data['Data'].length;
+			Files[Name]['Data'] += data['Data'];
+			if(Files[Name]['Downloaded'] == Files[Name]['FileSize']) //If File is Fully Uploaded
+			{
+				fs.write(Files[Name]['Handler'], Files[Name]['Data'], null, 'Binary', function(err, Writen){
+					var inp = fs.createReadStream("Temp/" + Name);
+					var out = fs.createWriteStream("Video/" + Name);
+					util.pump(inp, out, function(){
+						fs.unlink("Temp/" + Name, function () { //This Deletes The Temporary File
+							//exec("ffmpeg -i Video/" + Name  + " -ss 01:30 -r 1 -an -vframes 1 -f mjpeg Video/" + Name  + ".jpg", function(err){
+								socket.emit('Done', {'Image' : 'Video/' + Name + '.jpg'});
+							//});
+						});
+					});
+				});
+			}
+			else if(Files[Name]['Data'].length > 10485760){ //If the Data Buffer reaches 10MB
+				fs.write(Files[Name]['Handler'], Files[Name]['Data'], null, 'Binary', function(err, Writen){
+					Files[Name]['Data'] = ""; //Reset The Buffer
+					var Place = Files[Name]['Downloaded'] / 524288;
+					var Percent = (Files[Name]['Downloaded'] / Files[Name]['FileSize']) * 100;
+					socket.emit('MoreData', { 'Place' : Place, 'Percent' :  Percent});
+				});
+			}
+			else
+			{
+				var Place = Files[Name]['Downloaded'] / 524288;
+				var Percent = (Files[Name]['Downloaded'] / Files[Name]['FileSize']) * 100;
+				socket.emit('MoreData', { 'Place' : Place, 'Percent' :  Percent});
+			}
+		});
 });
-
 
 //the getFolders function searches the public/media directory and returns the folders there
 function getFolders(data, socket)

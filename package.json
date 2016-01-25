@@ -14,7 +14,7 @@
     "morgan": "~1.5.3",
     "serve-favicon": "~2.2.1",
 	"socket.io": "~1.3.5",
-	"which-os": "~0.0.2",
-	"fluent-ffmpeg": "~2.0.1"
+	"fluent-ffmpeg": "~2.0.1",
+	"multer": "~1.1.0"
   }
 }
