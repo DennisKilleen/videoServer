@@ -5,12 +5,12 @@ var Path = "http://localhost/";
 var FReader;
 var Name;
 
-
 //When the document has finished loading this function will be the first to run
 $(document).ready(function()
 {
 	$("#player").hide(); //hide the player until the user makes a choice
 	$("#backToFiles").hide(); //hide the button to restart the selection process
+	$("#backToFolders").hide(); //hide the button to restart the selection process
 	$("#folders").show(); //show the options the user has
 	if(window.File && window.FileReader) //check if the browser is compatible
 	{ 
@@ -21,8 +21,31 @@ $(document).ready(function()
 	{
 		document.getElementById('UploadArea').innerHTML = "Your Browser Doesn't Support The File API Please Update Your Browser"; //if the current browser needs to be updated
 	}
+	socket.emit("GET_FOLDERS_FOR_RADIOBUTTONS", {"source": "public/media/"});
+	socket.on("RETURN_GET_FOLDERS_FOR_RADIOBUTTONS", function(data)
+	{
+		temp = data.data; //get the data from the socket
+		for(var i = 0; i < temp.length;i++) 
+		{
+			if(i==0)
+			{
+				$('#UploadButton').before('<label for="folderSelector">Choose the folder upload to: </label></br>');
+				$('#UploadButton').before('<input id="radioSelection" name="folderSelector" type="Radio" value="'+temp[i]+'">'+temp[i]+'</input>'); //inject buttons to the page with the names of the folder
+			}
+			else if(i == temp.length-1)
+			{
+				$('#UploadButton').before('<input id="radioSelection" name="folderSelector" type="Radio" value="'+temp[i]+'">'+temp[i]+'</input><br>');
+			}
+			else{
+				$('#UploadButton').before('<input id="radioSelection" name="folderSelector" type="Radio" value="'+temp[i]+'">'+temp[i]+'</input>');
+			}
+		}	
+	});
 });	
-
+$("input[name='folderSelector']").change(function()
+{
+    alert($(this).val());
+});
 /************************************************************************************
 /
 / Web player div functions below
@@ -46,6 +69,43 @@ function folders()
 	$("#folders").hide(); //hide the button to get folders
 }
 
+//the button this function is called by is dual use it loads the player and searches the directory
+function createFolder()
+{
+	$("#folders").hide(); //hide the button to get folders
+	var $input = $('<label for="NameBox">Name For the file: </label><input type="text" id="folderName" style="color: #000000;"></br><button type="button" class="btn btn-primary btn-xl page-scroll" onclick="sendingCreateFolder()">Submit</button>'); //inject buttons to the page with the names of the folder
+	$input.appendTo($('#buttons')); //add the buttons to the page
+}
+function sendingCreateFolder()
+{
+	socket.emit("CREATE_FOLDER", {"source": "public/media/", "name": document.getElementById('folderName').value}); //send the folder name and address to the server
+	socket.on("RETURN_CREATE_FOLDER", function(data) //listen for the socket return
+	{
+		if(data.data == true) // if the folder was created
+		{
+			alert("Folder was created"); //alert the user
+			Refresh(); //refresh the page
+		}
+		else //if the folder was not ccreated
+		{
+			if (e.code != 'EEXIST') //if the folder is already in the directory
+			{
+				alert("Folder already exists"); //alert the user
+				Refresh(); //refresh the page
+			}
+			else if (e.code != 'EPERM') //if the os wont allow the server to create the folder
+			{
+				alert("Folder cannot be created due to permission issues"); //alert the user
+				Refresh(); //refresh the folder
+			}
+			else //if there was an error elsewhere
+			{
+				alert("Folder cannot be created due to some unforeseen error"); //alert the user
+				Refresh(); //refresh the page
+			}
+		}
+	});
+}
 //the socket listener for the returning folder names
 socket.on("RETURN_GET_FOLDERS", function(data)
 {
@@ -71,17 +131,21 @@ socket.on("RETURN_GET_FILES", function(data)
 		$('#buttons').empty(); //empty the buttons div
 		var $input = $('<p>The selected directory is empty</p>');//inject buttons to the page with the names of the files
 		$input.appendTo( $('#buttons')); //add the buttons to the page
+		$('#backToFolders').show();
 	}
 	else //if the server returns files
 	{
 		temp=[];
 		$('#buttons').empty(); //empty the buttons div
 		temp = data.data; //get the data from the socket
+		var res;
 		for(var i = 0; i < temp.length;i++)
 		{
-			var $input = $('<button id="'+temp[i]+'" class="btn btn-primary btn-xl page-scroll" onclick="placeholderFile(this.id);">'+temp[i].substring(22, temp[i].length)+'</button>');//inject buttons to the page with the names of the files
+			res = temp[i].split("/");
+			var $input = $('<button id="'+temp[i]+'" class="btn btn-primary btn-xl page-scroll" onclick="placeholderFile(this.id);">'+res[4]+'</button>');//inject buttons to the page with the names of the files
 			$input.appendTo( $('#buttons')); //add the buttons to the page
 		}
+		$('#backToFolders').show();
 	}
 });
 
@@ -95,13 +159,24 @@ function placeholderFile(id)
 	document.getElementById("player_a").src = id.replace("/public", ""); //set the source for the player
 }
 
+//function for the button press to bring back up a file list
 function backToFiles()
 {
-	$("#buttons").show(); // show the files previously selected
-	$("#player").hide(); //hide the player
-	$("#backToFiles").hide(); //hide the back to files button
+	$('#backTofiles').hide(); //hide the back to files button because were on going back one level
+	$("#player").hide(); //show the player
+	$('#buttons').show(); //show the buttons menu again
 }
 
+//function to go back to the folders
+function backToFolders()
+{
+	$('#backTofiles').hide(); //hide the back to files because in the folder menu we have known
+	$('#backToFolders').hide();// hide the back to folders because were back at  the origin
+	$("#player").hide(); //show the player
+	$('#buttons').empty(); //empty the buttons div
+	$('#buttons').show(); //show the buttons menu again
+	socket.emit("GET_FOLDERS", {"source": "public/media/"}); //get the folders from the server
+}
 
 /************************************************************************************
 /
@@ -114,28 +189,41 @@ function FileChosen(evnt)
 	SelectedFile = evnt.target.files[0]; //the selected file is the uploaded file
 	document.getElementById('NameBox').value = SelectedFile.name; //the namebox name gets set to the files name
 }
-
+var checked;
+$("input[type=radio]").click(function () 
+{
+    if($(this).prop("checked")) 
+	{ checked = true }
+});
 //File upload function
 function StartUpload()
 {
-	if(document.getElementById('FileBox').value != "") //Check to see if the user has entered a file
+	if(checked == true)
 	{
-		FReader = new FileReader(); //create a new filereder object
-		Name = document.getElementById('NameBox').value;
-		var Content = "<span id='NameArea'>Uploading " + SelectedFile.name + " as " + Name + "</span>"; //alert the user of the file being uploaded being renamed
-		Content += '<center><div id="ProgressContainer" class="ProgressContainer"><div id="ProgressBar" class="ProgressBar"></div></div><span id="percent">50%</span></center>'; //Injects a new div to graphically show progress
-		Content += "<span id='Uploaded'> - <span id='MB'>0</span>/" + Math.round(SelectedFile.size / 1048576) + "MB</span>"; //injects text to give a visual representation of the file upload progress
-		document.getElementById('UploadArea').innerHTML = Content; //adds the injection to the content
-		FReader.onload = function(evnt)
+		var path = $("input[name=folderSelector]:checked").val();
+		if(document.getElementById('FileBox').value != "") //Check to see if the user has entered a file
 		{
-			socket.emit('Upload', { 'Name' : Name, Data : evnt.target.result });
+			FReader = new FileReader(); //create a new filereder object
+			Name = document.getElementById('NameBox').value;
+			var Content = "<span id='NameArea'>Uploading " + SelectedFile.name + " as " + Name + "</span>"; //alert the user of the file being uploaded being renamed
+			Content += '<center><div id="ProgressContainer" class="ProgressContainer"><div id="ProgressBar" class="ProgressBar"></div></div><span id="percent">50%</span></center>'; //Injects a new div to graphically show progress
+			Content += "<span id='Uploaded'> - <span id='MB'>0</span>/" + Math.round(SelectedFile.size / 1048576) + "MB</span>"; //injects text to give a visual representation of the file upload progress
+			document.getElementById('UploadArea').innerHTML = Content; //adds the injection to the content
+			FReader.onload = function(evnt)
+			{
+				socket.emit('Upload', { 'Name' : Name, Data : evnt.target.result, 'Path':  path});
+			}
+			socket.emit('Start', { 'Name' : Name, 'Size' : SelectedFile.size });
 		}
-		socket.emit('Start', { 'Name' : Name, 'Size' : SelectedFile.size });
+		else //if no file has been submitted and upload button pressed
+		{
+			alert("Please Select A File"); //alert the user to select a file
+		}
 	}
-	else //if no file has been submitted and upload button pressed
-	{
-		alert("Please Select A File"); //alert the user to select a file
+	else{
+		alert("Please select a folder to upload too");
 	}
+	checked = false;
 }
 
 //the data chunks function. this will fire everytime the data sent has reached the limit
@@ -182,3 +270,13 @@ function Refresh()
 / Delete file or folder div functions below
 /
 ************************************************************************************/
+
+
+function deleteFolder()
+{
+	socket.emit("DELETE_FOLDERS", {"dir": "public/media/", "folder":document.getElementById("deleteFolderName").value});
+	socket.on("RETURN_DELETE_FOLDER", function(data)
+	{
+		alert(data.data);
+	});
+}

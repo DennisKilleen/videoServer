@@ -1,11 +1,12 @@
-var path = require('path');
-var fs = require('fs');
-var exec = require('child_process').execFile;
-var ffmpeg = require('fluent-ffmpeg');
+var path 	= require('path');
+var fs 		= require('fs');
+var exec 	= require('child_process').execFile;
+var ffmpeg 	= require('fluent-ffmpeg');
 
+//videoApi constructor
 function videoAPI(osParam)
 {
-	this.os = osParam;
+	this.os = osParam; //set the os parameter 
 }
 
 //gets a list of folders
@@ -28,7 +29,9 @@ videoAPI.prototype.getFiles = function(dir, files_)
         if (fs.statSync(name).isDirectory())
 		{
             getFiles(name, files_);
-        } else {
+        } 
+		else 
+		{
             files_.push(name);
         }
     }
@@ -56,12 +59,37 @@ videoAPI.prototype.startFFmpeg = function()
 			}).on('error', function(err) 
 			{
 				console.log('an error happened: ' + err.message);
-			}).saveToFile('./public/media/Movies/Jupiter.Ascending.2015.mp4');
+			}).saveToFile('./public/media/Movies/.mp4');
 			break;
 		case 'OSX':
 			console.log("in OSX");
 			break;
 	}
+}
+
+videoAPI.prototype.deleteFolder = function(folderPath) 
+{
+	
+  if( fs.existsSync(folderPath) ) 
+  {
+	fs.readdirSync(folderPath).forEach(function(file,index)
+	{
+	  var curPath = folderPath + "/" + file;
+	  if(fs.lstatSync(curPath).isDirectory()) 
+	  { // recurse
+		deleteFolderRecursive(curPath);
+	  } 
+	  else 
+	  { // delete file
+		fs.unlinkSync(curPath);
+	  }
+	});
+	fs.rmdirSync(folderPath);
+	return folderPath+" deleted.";
+  }
+  else{
+	return "Something went wrong check your folder structure";
+  }
 }
 
 module.exports = videoAPI;

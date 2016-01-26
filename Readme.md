@@ -24,14 +24,14 @@ Latest build 26/01/2016 file upload sends file to the "Movies" folder.
 1.	~~Code clean.~~
 2.	Recode the file upload to check for file extension.
 3.	Pass all files that are not mp4 or avi to ffmpeg to transcode to mp4.
-4.	Save the files into the relevant folder in Node.
-5.	Create and input system to allow the user to create files.
-6.	Set up an input system to delete files or folders.
-7.	Fix folder upload destination.
-8.	Create delete file/folder button.
+4.	~~Save the files into the relevant folder in Node.~~
+5.	~~Create and input system to allow the user to create files.~~
+6.	~~Set up an input system to delete files or folders.~~
+7.	~~Fix folder upload destination.~~
+8.	~~Create delete file/folder button.~~
 9.	Create .bat, .sh to run file on os for ease of use.
-10.	Add footer to html page.
-11.	Fix graphical progress bar.  
+10.	~~Add footer to html page.~~
+11.	Fix graphical progress bar.    
 
 ## Thanks
 Thanks to Gabriel Manricks for the binary stream upload tutorial and Projekktor for the open source player.  

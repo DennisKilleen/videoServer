@@ -36,21 +36,35 @@ app.use('/', routes);
 server.listen(port);
 
 //Commands
-var CMD_GET_FOLDERS 		= "GET_FOLDERS";
-var CMD_GET_FILES 			= "GET_FILES";
-var CMD_RETURN_GET_IP 		= "RETURN_GET_IP";
-var CMD_RETURN_GET_FOLDERS 	= "RETURN_GET_FOLDERS";
-var CMD_RETURN_GET_FILES 	= "RETURN_GET_FILES";
-var CMD_UPLOADED_FILES		= "UPLOADED_FILES";
-
+var CMD_GET_FOLDERS 						= "GET_FOLDERS";
+var CMD_GET_FILES 							= "GET_FILES";
+var CMD_RETURN_GET_IP 						= "RETURN_GET_IP";
+var CMD_RETURN_GET_FOLDERS 					= "RETURN_GET_FOLDERS";
+var CMD_RETURN_GET_FILES 					= "RETURN_GET_FILES";
+var CMD_UPLOADED_FILES						= "UPLOADED_FILES";
+var CMD_CREATE_FOLDER 						= "CREATE_FOLDER";
+var CMD_RETURN_CREATE_FOLDER				= "RETURN_CREATE_FOLDER";
+var CMD_DELETE_FOLDERS						= "DELETE_FOLDERS";
+var CMD_RETURN_DELETE_FOLDER				= "RETURN_DELETE_FOLDER";
+var CMD_GET_FOLDERS_FOR_RADIOBUTTONS 		= "GET_FOLDERS_FOR_RADIOBUTTONS";
+var CMD_RETURN_GET_FOLDERS_FOR_RADIOBUTTONS = "RETURN_GET_FOLDERS_FOR_RADIOBUTTONS";
 //set up the object used
 var vid 					= new videoAPI(os.type());
 
 //vid.startFFmpeg();
 
+
 //the set up for the sockets
 io.on('connect', function(socket)
 {
+	socket.on(CMD_GET_FOLDERS_FOR_RADIOBUTTONS, function(data) //listen for the socket
+	{
+		getFoldersForRadiobuttons(data, socket); //move the data and the socket handler to the function 
+	});
+	socket.on(CMD_DELETE_FOLDERS, function(data) //listen for the socket
+	{
+		deleteFolder(data, socket);
+	});
 	
 	socket.on(CMD_GET_FOLDERS, function(data) //listen for the socket
 	{
@@ -59,6 +73,10 @@ io.on('connect', function(socket)
 	socket.on(CMD_GET_FILES, function(data) //listen for the socket
 	{
 		getFiles(data, socket); //move the data and the socket handler to the function 
+	});
+	socket.on(CMD_CREATE_FOLDER, function(data) //listen for the socket
+	{
+		createFolder(data, socket); //move the data and the socket handler to the function 
 	});
 	socket.on('Start', function (data) { //data contains the variables that we passed through in the html file
 			var Name = data['Name'];
@@ -99,7 +117,7 @@ io.on('connect', function(socket)
 			{
 				fs.write(Files[Name]['Handler'], Files[Name]['Data'], null, 'Binary', function(err, Writen){
 					var inp = fs.createReadStream("Temp/" + Name);
-					var out = fs.createWriteStream("public/media/Movies/" + Name);
+					var out = fs.createWriteStream("public/media/"+ data.Path +"/" + Name);
 					util.pump(inp, out, function(){
 						fs.unlink("Temp/" + Name, function () { //This Deletes The Temporary File
 							//exec("ffmpeg -i Video/" + Name  + " -ss 01:30 -r 1 -an -vframes 1 -f mjpeg Video/" + Name  + ".jpg", function(err){
@@ -125,6 +143,13 @@ io.on('connect', function(socket)
 			}
 		});
 });
+
+//function populates the radio buttons
+function getFoldersForRadiobuttons(data, socket)
+{
+	var folderList = vid.getFolders(data.source); //send the data taken from the socket to the vid object method getFolders()
+	socket.emit(CMD_RETURN_GET_FOLDERS_FOR_RADIOBUTTONS, {"data": folderList}); //emit the data back to the html page for displaying
+}
 
 //the getFolders function searches the public/media directory and returns the folders there
 function getFolders(data, socket)
@@ -153,6 +178,24 @@ function getFiles(data, socket)
 	{
 		socket.emit(CMD_RETURN_GET_FILES, {"data": "Empty directory"});
 	}
+}
+
+//function to create the user specified folder
+function createFolder(data, socket)
+{
+	fs.mkdir(data.source+"/"+data.name, function(e) //create the directory in the specified location
+	{
+        if (!e) //if the file has been created
+			socket.emit(CMD_RETURN_CREATE_FOLDER, {"data": true}); //send a socket to the browser stating the creation is true
+		else //if the file was not created
+			socket.emit(CMD_RETURN_CREATE_FOLDER, {"data": e}); //send the error code to the browser
+	});
+}
+
+function deleteFolder(data, socket)
+{
+	var deletedFolder = vid.deleteFolder(data.dir+data.folder);
+	socket.emit(CMD_RETURN_DELETE_FOLDER, {"data": deletedFolder});
 }
 
 //set the server listening
