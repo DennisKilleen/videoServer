@@ -240,7 +240,7 @@ socket.on('MoreData', function (data)
 //this function shows the upload progress
 function UpdateBar(percent)
 {
-	//document.getElementById('ProgressBar').style.width = percent + '%'; ------------- need to fix ----------------
+	document.getElementById('ProgressBar').style.width = percent + '%'; 
 	document.getElementById('percent').innerHTML = (Math.round(percent*100)/100) + '%'; //sends the update text progress to the percent span
 	var MBDone = Math.round(((percent/100.0) * SelectedFile.size) / 1048576); //sets the amount of mb uploaded
 	document.getElementById('MB').innerHTML = MBDone; //sends the amount of mb uploaded to the html
@@ -251,7 +251,7 @@ socket.on('Done', function (data)
 {
 	var Content = "Video Successfully Uploaded !!" //show the user the upload is complete
 	//Content += "<img id='Thumb' src='" + Path + data['Image'] + "' alt='" + Name + "'><br>"; --------------need to get working ------------------
-	Content += "<button	type='button' name='Upload' value='' id='Restart' class='btn btn-primary btn-xl page-scroll'>Upload Another</button>"; //sets a button to allow the user to upload again
+	Content += "</br><button type='button' name='Upload' value='' id='Restart' class='btn btn-primary btn-xl page-scroll'>Upload Another</button>"; //sets a button to allow the user to upload again
 	document.getElementById('UploadArea').innerHTML = Content; //set the content to the div
 	document.getElementById('Restart').addEventListener('click', Refresh); //make the refresh button direct to the refresh function
 	//document.getElementById('Restart').style.left = '20px';

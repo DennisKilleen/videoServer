@@ -118,17 +118,18 @@ io.on('connect', function(socket)
 			fs.write(Files[Name]['Handler'], Files[Name]['Data'], null, 'Binary', function(err, Writen)
 			{
 				var inp = fs.createReadStream("Temp/" + Name);
-				var out = fs.createWriteStream("public/media/"+ data.Path +"/" + Name);
+				var out = fs.createWriteStream("public/media/"+ data.Path +"/" + data.fullName);
 				util.pump(inp, out, function()
 				{
 					fs.unlink("Temp/" + Name, function () 
-					{ //This Deletes The Temporary File
+					{ 
 						//exec("ffmpeg -i Video/" + Name  + " -ss 01:30 -r 1 -an -vframes 1 -f mjpeg Video/" + Name  + ".jpg", function(err){
 							socket.emit('Done', {'Image' : 'Video/' + Name + '.jpg'});
 						//});
 					});
 				});
 			});
+			vid.deleteFiles();
 		}
 		else if(Files[Name]['Data'].length > 10485760){ //If the Data Buffer reaches 10MB
 			fs.write(Files[Name]['Handler'], Files[Name]['Data'], null, 'Binary', function(err, Writen){
@@ -147,6 +148,8 @@ io.on('connect', function(socket)
 	});
 });
 
+
+//vid.deleteFiles();
 //function populates the radio buttons
 function getFoldersForRadiobuttons(data, socket)
 {

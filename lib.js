@@ -92,5 +92,17 @@ videoAPI.prototype.deleteFolder = function(folderPath)
   }
 }
 
+videoAPI.prototype.deleteFiles = function()
+{
+	try { var files = fs.readdirSync("./Temp/"); }
+	catch(e) { return; }
+	if (files.length > 0)
+	for (var i = 0; i < files.length; i++) 
+	{
+	  var filePath = "./Temp" + '/' + files[i];
+	  if (fs.statSync(filePath).isFile())
+		fs.unlinkSync(filePath);
+	}
+}
 
 module.exports = videoAPI;
