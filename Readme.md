@@ -19,6 +19,7 @@ After running the project direct your browser to the ip with the port number at 
 Initially build on 23/1/2016 includes sample media with playback.  
 Latest build on 25/01/2016 has workinig upload but is not accesible to media player.
 Latest build 26/01/2016 file upload sends file to the "Movies" folder.
+Latest build 27/01/2016 file uploads to selected directory. Graphical Progress bar works. Need to work on transcoding file format, adding thumbnail images and fix 'Temp' directory deletion, deleting specific files.  
 
 ## Planned todo list:
 1.	~~Code clean.~~
@@ -31,7 +32,7 @@ Latest build 26/01/2016 file upload sends file to the "Movies" folder.
 8.	~~Create delete file/folder button.~~
 9.	Create .bat, .sh to run file on os for ease of use.
 10.	~~Add footer to html page.~~
-11.	Fix graphical progress bar.    
+11.	~~Fix graphical progress bar.~~    
 
 ## Thanks
 Thanks to Gabriel Manricks for the binary stream upload tutorial and Projekktor for the open source player.  
