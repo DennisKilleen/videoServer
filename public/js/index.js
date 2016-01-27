@@ -27,16 +27,17 @@ $(document).ready(function()
 		temp = data.data; //get the data from the socket
 		for(var i = 0; i < temp.length;i++) 
 		{
-			if(i==0)
+			if(temp[i].length == 0)
 			{
 				$('#UploadButton').before('<label for="folderSelector">Choose the folder upload to: </label></br>');
 				$('#UploadButton').before('<input id="radioSelection" name="folderSelector" type="Radio" value="'+temp[i]+'">'+temp[i]+'</input>'); //inject buttons to the page with the names of the folder
 			}
 			else if(i == temp.length-1)
 			{
-				$('#UploadButton').before('<input id="radioSelection" name="folderSelector" type="Radio" value="'+temp[i]+'">'+temp[i]+'</input><br>');
+				$('#UploadButton').before('<input id="radioSelection" name="folderSelector" type="Radio" value="'+temp[i]+'">'+temp[i]+'</input></br>');
 			}
-			else{
+			else
+			{
 				$('#UploadButton').before('<input id="radioSelection" name="folderSelector" type="Radio" value="'+temp[i]+'">'+temp[i]+'</input>');
 			}
 		}	
@@ -162,7 +163,7 @@ function placeholderFile(id)
 //function for the button press to bring back up a file list
 function backToFiles()
 {
-	$('#backTofiles').hide(); //hide the back to files button because were on going back one level
+	$('#backToFiles').hide(); //hide the back to files button because were on going back one level
 	$("#player").hide(); //show the player
 	$('#buttons').show(); //show the buttons menu again
 }
@@ -170,7 +171,7 @@ function backToFiles()
 //function to go back to the folders
 function backToFolders()
 {
-	$('#backTofiles').hide(); //hide the back to files because in the folder menu we have known
+	$('#backToFiles').hide(); //hide the back to files because in the folder menu we have known
 	$('#backToFolders').hide();// hide the back to folders because were back at  the origin
 	$("#player").hide(); //show the player
 	$('#buttons').empty(); //empty the buttons div
@@ -189,29 +190,27 @@ function FileChosen(evnt)
 	SelectedFile = evnt.target.files[0]; //the selected file is the uploaded file
 	document.getElementById('NameBox').value = SelectedFile.name; //the namebox name gets set to the files name
 }
-var checked;
-$("input[type=radio]").click(function () 
-{
-    if($(this).prop("checked")) 
-	{ checked = true }
-});
+
+
 //File upload function
 function StartUpload()
 {
-	if(checked == true)
+	if($("input[name=folderSelector]:checked").val() != "")
 	{
 		var path = $("input[name=folderSelector]:checked").val();
+		var nameWithExtension; 
 		if(document.getElementById('FileBox').value != "") //Check to see if the user has entered a file
 		{
 			FReader = new FileReader(); //create a new filereder object
 			Name = document.getElementById('NameBox').value;
-			var Content = "<span id='NameArea'>Uploading " + SelectedFile.name + " as " + Name + "</span>"; //alert the user of the file being uploaded being renamed
+			nameWithExtension = Name+SelectedFile.name.substring(SelectedFile.name.length -4, SelectedFile.name.length);
+			var Content = "<span id='NameArea'>Uploading " + SelectedFile.name + " as " + nameWithExtension + "</span>"; //alert the user of the file being uploaded being renamed
 			Content += '<center><div id="ProgressContainer" class="ProgressContainer"><div id="ProgressBar" class="ProgressBar"></div></div><span id="percent">50%</span></center>'; //Injects a new div to graphically show progress
 			Content += "<span id='Uploaded'> - <span id='MB'>0</span>/" + Math.round(SelectedFile.size / 1048576) + "MB</span>"; //injects text to give a visual representation of the file upload progress
 			document.getElementById('UploadArea').innerHTML = Content; //adds the injection to the content
 			FReader.onload = function(evnt)
 			{
-				socket.emit('Upload', { 'Name' : Name, Data : evnt.target.result, 'Path':  path});
+				socket.emit('Upload', { 'Name' : Name, 'fullName': nameWithExtension, Data : evnt.target.result, 'Path':  path});
 			}
 			socket.emit('Start', { 'Name' : Name, 'Size' : SelectedFile.size });
 		}
@@ -223,7 +222,6 @@ function StartUpload()
 	else{
 		alert("Please select a folder to upload too");
 	}
-	checked = false;
 }
 
 //the data chunks function. this will fire everytime the data sent has reached the limit

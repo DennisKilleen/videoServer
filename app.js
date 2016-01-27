@@ -110,38 +110,41 @@ io.on('connect', function(socket)
 	
 	socket.on('Upload', function (data)
 	{
-			var Name = data['Name'];
-			Files[Name]['Downloaded'] += data['Data'].length;
-			Files[Name]['Data'] += data['Data'];
-			if(Files[Name]['Downloaded'] == Files[Name]['FileSize']) //If File is Fully Uploaded
+		var Name = data['Name'];
+		Files[Name]['Downloaded'] += data['Data'].length;
+		Files[Name]['Data'] += data['Data'];
+		if(Files[Name]['Downloaded'] == Files[Name]['FileSize']) //If File is Fully Uploaded
+		{
+			fs.write(Files[Name]['Handler'], Files[Name]['Data'], null, 'Binary', function(err, Writen)
 			{
-				fs.write(Files[Name]['Handler'], Files[Name]['Data'], null, 'Binary', function(err, Writen){
-					var inp = fs.createReadStream("Temp/" + Name);
-					var out = fs.createWriteStream("public/media/"+ data.Path +"/" + Name);
-					util.pump(inp, out, function(){
-						fs.unlink("Temp/" + Name, function () { //This Deletes The Temporary File
-							//exec("ffmpeg -i Video/" + Name  + " -ss 01:30 -r 1 -an -vframes 1 -f mjpeg Video/" + Name  + ".jpg", function(err){
-								socket.emit('Done', {'Image' : 'Video/' + Name + '.jpg'});
-							//});
-						});
+				var inp = fs.createReadStream("Temp/" + Name);
+				var out = fs.createWriteStream("public/media/"+ data.Path +"/" + Name);
+				util.pump(inp, out, function()
+				{
+					fs.unlink("Temp/" + Name, function () 
+					{ //This Deletes The Temporary File
+						//exec("ffmpeg -i Video/" + Name  + " -ss 01:30 -r 1 -an -vframes 1 -f mjpeg Video/" + Name  + ".jpg", function(err){
+							socket.emit('Done', {'Image' : 'Video/' + Name + '.jpg'});
+						//});
 					});
 				});
-			}
-			else if(Files[Name]['Data'].length > 10485760){ //If the Data Buffer reaches 10MB
-				fs.write(Files[Name]['Handler'], Files[Name]['Data'], null, 'Binary', function(err, Writen){
-					Files[Name]['Data'] = ""; //Reset The Buffer
-					var Place = Files[Name]['Downloaded'] / 524288;
-					var Percent = (Files[Name]['Downloaded'] / Files[Name]['FileSize']) * 100;
-					socket.emit('MoreData', { 'Place' : Place, 'Percent' :  Percent});
-				});
-			}
-			else
-			{
+			});
+		}
+		else if(Files[Name]['Data'].length > 10485760){ //If the Data Buffer reaches 10MB
+			fs.write(Files[Name]['Handler'], Files[Name]['Data'], null, 'Binary', function(err, Writen){
+				Files[Name]['Data'] = ""; //Reset The Buffer
 				var Place = Files[Name]['Downloaded'] / 524288;
 				var Percent = (Files[Name]['Downloaded'] / Files[Name]['FileSize']) * 100;
 				socket.emit('MoreData', { 'Place' : Place, 'Percent' :  Percent});
-			}
-		});
+			});
+		}
+		else
+		{
+			var Place = Files[Name]['Downloaded'] / 524288;
+			var Percent = (Files[Name]['Downloaded'] / Files[Name]['FileSize']) * 100;
+			socket.emit('MoreData', { 'Place' : Place, 'Percent' :  Percent});
+		}
+	});
 });
 
 //function populates the radio buttons
