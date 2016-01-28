@@ -21,7 +21,6 @@ var server 			= require('http').createServer(app);
 var exec 			= require('child_process').execFile;
 var io				= require('socket.io')(9001);
 var files 			= [];
-var Files 			= {};
 
 //set up the app handlers
 app.use(favicon(__dirname + '/public/tv.ico'));
@@ -48,6 +47,7 @@ var CMD_DELETE_FOLDERS						= "DELETE_FOLDERS";
 var CMD_RETURN_DELETE_FOLDER				= "RETURN_DELETE_FOLDER";
 var CMD_GET_FOLDERS_FOR_RADIOBUTTONS 		= "GET_FOLDERS_FOR_RADIOBUTTONS";
 var CMD_RETURN_GET_FOLDERS_FOR_RADIOBUTTONS = "RETURN_GET_FOLDERS_FOR_RADIOBUTTONS";
+var CMD_CLEAN_UP							= "CLEAN_UP";
 //set up the object used
 var vid 					= new videoAPI(os.type());
 
@@ -57,15 +57,6 @@ var vid 					= new videoAPI(os.type());
 //the set up for the sockets
 io.on('connect', function(socket)
 {
-	socket.on(CMD_GET_FOLDERS_FOR_RADIOBUTTONS, function(data) //listen for the socket
-	{
-		getFoldersForRadiobuttons(data, socket); //move the data and the socket handler to the function 
-	});
-	socket.on(CMD_DELETE_FOLDERS, function(data) //listen for the socket
-	{
-		deleteFolder(data, socket);
-	});
-	
 	socket.on(CMD_GET_FOLDERS, function(data) //listen for the socket
 	{
 		getFolders(data, socket); //move the data and the socket handler to the function 
@@ -78,84 +69,29 @@ io.on('connect', function(socket)
 	{
 		createFolder(data, socket); //move the data and the socket handler to the function 
 	});
-	socket.on('Start', function (data) { //data contains the variables that we passed through in the html file
-			var Name = data['Name'];
-			Files[Name] = {  //Create a new Entry in The Files Variable
-				FileSize : data['Size'],
-				Data	 : "",
-				Downloaded : 0
-			}
-			var Place = 0;
-			try{
-				var Stat = fs.statSync('Temp/' +  Name);
-				if(Stat.isFile())
-				{
-					Files[Name]['Downloaded'] = Stat.size;
-					Place = Stat.size / 524288;
-				}
-			}
-	  		catch(er){} //It's a New File
-			fs.open("Temp/" + Name, 'a', 0755, function(err, fd){
-				if(err)
-				{
-					console.log(err);
-				}
-				else
-				{
-					Files[Name]['Handler'] = fd; //We store the file handler so we can write to it later
-					socket.emit('MoreData', { 'Place' : Place, Percent : 0 });
-				}
-			});
+	socket.on('Start', function (data) //data contains the variables that we passed through in the html file
+	{ 
+		startUpload(data, socket);
 	});
 	
 	socket.on('Upload', function (data)
 	{
-		var Name = data['Name'];
-		Files[Name]['Downloaded'] += data['Data'].length;
-		Files[Name]['Data'] += data['Data'];
-		if(Files[Name]['Downloaded'] == Files[Name]['FileSize']) //If File is Fully Uploaded
-		{
-			fs.write(Files[Name]['Handler'], Files[Name]['Data'], null, 'Binary', function(err, Writen)
-			{
-				var inp = fs.createReadStream("Temp/" + Name);
-				var out = fs.createWriteStream("public/media/"+ data.Path +"/" + data.fullName);
-				util.pump(inp, out, function()
-				{
-					fs.unlink("Temp/" + Name, function () 
-					{ 
-						//exec("ffmpeg -i Video/" + Name  + " -ss 01:30 -r 1 -an -vframes 1 -f mjpeg Video/" + Name  + ".jpg", function(err){
-							socket.emit('Done', {'Image' : 'Video/' + Name + '.jpg'});
-						//});
-					});
-				});
-			});
-			vid.deleteFiles();
-		}
-		else if(Files[Name]['Data'].length > 10485760){ //If the Data Buffer reaches 10MB
-			fs.write(Files[Name]['Handler'], Files[Name]['Data'], null, 'Binary', function(err, Writen){
-				Files[Name]['Data'] = ""; //Reset The Buffer
-				var Place = Files[Name]['Downloaded'] / 524288;
-				var Percent = (Files[Name]['Downloaded'] / Files[Name]['FileSize']) * 100;
-				socket.emit('MoreData', { 'Place' : Place, 'Percent' :  Percent});
-			});
-		}
-		else
-		{
-			var Place = Files[Name]['Downloaded'] / 524288;
-			var Percent = (Files[Name]['Downloaded'] / Files[Name]['FileSize']) * 100;
-			socket.emit('MoreData', { 'Place' : Place, 'Percent' :  Percent});
-		}
+		upload(data, socket);
+	});
+	socket.on(CMD_GET_FOLDERS_FOR_RADIOBUTTONS, function(data) //listen for the socket
+	{
+		getFoldersForRadiobuttons(data, socket); //move the data and the socket handler to the function 
+	});
+	socket.on(CMD_DELETE_FOLDERS, function(data) //listen for the socket
+	{
+		deleteFolder(data, socket);
+	});
+	socket.on(CMD_CLEAN_UP, function(data) //listen for the socket
+	{
+		console.log("cleanup");
+		cleanUp(); //delete temp files
 	});
 });
-
-
-//vid.deleteFiles();
-//function populates the radio buttons
-function getFoldersForRadiobuttons(data, socket)
-{
-	var folderList = vid.getFolders(data.source); //send the data taken from the socket to the vid object method getFolders()
-	socket.emit(CMD_RETURN_GET_FOLDERS_FOR_RADIOBUTTONS, {"data": folderList}); //emit the data back to the html page for displaying
-}
 
 //the getFolders function searches the public/media directory and returns the folders there
 function getFolders(data, socket)
@@ -198,12 +134,48 @@ function createFolder(data, socket)
 	});
 }
 
-function deleteFolder(data, socket)
+//this function handles the start of the binary stream
+function startUpload(data, socket)
 {
-	var deletedFolder = vid.deleteFolder(data.dir+data.folder);
-	socket.emit(CMD_RETURN_DELETE_FOLDER, {"data": deletedFolder});
+	vid.startUpload(data, socket); //send data to the object mehod
 }
 
+var checkForIfUploadIsFinished;
+// this function handles the binary stream upload
+function upload(data, socket)
+{
+	var upload = vid.upload(data, socket); //send data to the object method
+	if(upload != "uploading")
+	{
+		//Formats that videoplayer cant play mov,m4a,3gp,3g2,mj2,avi
+		if((data.fullName).substring((data.fullName).length -4, (data.fullName).length) != ".mp4")
+		{
+			vid.transcode(data, socket);
+		}
+	}
+	else{
+		
+	}
+}
+
+//function populates the radio buttons
+function getFoldersForRadiobuttons(data, socket)
+{
+	var folderList = vid.getFolders(data.source); //send the data taken from the socket to the vid object method getFolders()
+	socket.emit(CMD_RETURN_GET_FOLDERS_FOR_RADIOBUTTONS, {"data": folderList}); //emit the data back to the html page for displaying
+}
+
+//this function handles the deleting of a folder
+function deleteFolder(data, socket)
+{
+	var deletedFolder = vid.deleteFolder(data.dir+data.folder); //send the data to the object method
+	socket.emit(CMD_RETURN_DELETE_FOLDER, {"data": deletedFolder}); //send a socket back to the html page
+}
+function cleanUp()
+{
+	console.log("in cleanup");
+	//vid.deleteFiles(); EPERM error file is still in use somewhere when page refresh
+}
 //set the server listening
 server.listen(port, function () 
 {

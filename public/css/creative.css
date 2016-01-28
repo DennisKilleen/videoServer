@@ -505,8 +505,8 @@ body {
 }
 
 #Thumb {
-	max-width: 230px;
-	max-height: 130px;
+	max-width: 640px;
+	max-height: 480px;
 }
 
 .ProgressContainer {

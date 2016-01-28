@@ -188,7 +188,7 @@ function backToFolders()
 function FileChosen(evnt) 
 {
 	SelectedFile = evnt.target.files[0]; //the selected file is the uploaded file
-	document.getElementById('NameBox').value = SelectedFile.name; //the namebox name gets set to the files name
+	document.getElementById('NameBox').value = (SelectedFile.name).substring(0, (SelectedFile.name).length -4); //the namebox name gets set to the files name
 }
 
 
@@ -199,7 +199,15 @@ function StartUpload()
 	{
 		var path = $("input[name=folderSelector]:checked").val();
 		var nameWithExtension; 
-		if(document.getElementById('FileBox').value != "") //Check to see if the user has entered a file
+		if(document.getElementById('FileBox').value != "" 
+		&&( (document.getElementById('FileBox').value).substring((document.getElementById('FileBox').value).length-3, (document.getElementById('FileBox').value).length) == "mov"
+		|| (document.getElementById('FileBox').value).substring((document.getElementById('FileBox').value).length-3, (document.getElementById('FileBox').value).length) == "mkv"		
+		|| (document.getElementById('FileBox').value).substring((document.getElementById('FileBox').value).length-3, (document.getElementById('FileBox').value).length) == "mp4"
+		|| (document.getElementById('FileBox').value).substring((document.getElementById('FileBox').value).length-3, (document.getElementById('FileBox').value).length) == "m4a"
+		|| (document.getElementById('FileBox').value).substring((document.getElementById('FileBox').value).length-3, (document.getElementById('FileBox').value).length) == "3gp"
+		|| (document.getElementById('FileBox').value).substring((document.getElementById('FileBox').value).length-3, (document.getElementById('FileBox').value).length) == "3g2"
+		|| (document.getElementById('FileBox').value).substring((document.getElementById('FileBox').value).length-3, (document.getElementById('FileBox').value).length) == "mj2"
+		|| (document.getElementById('FileBox').value).substring((document.getElementById('FileBox').value).length-3, (document.getElementById('FileBox').value).length) == "avi")) //Check to see if the user has entered in a valid file
 		{
 			FReader = new FileReader(); //create a new filereder object
 			Name = document.getElementById('NameBox').value;
@@ -216,7 +224,7 @@ function StartUpload()
 		}
 		else //if no file has been submitted and upload button pressed
 		{
-			alert("Please Select A File"); //alert the user to select a file
+			alert("Please Select A  Media File"); //alert the user to select a file
 		}
 	}
 	else{
@@ -250,16 +258,21 @@ function UpdateBar(percent)
 socket.on('Done', function (data)
 {
 	var Content = "Video Successfully Uploaded !!" //show the user the upload is complete
-	//Content += "<img id='Thumb' src='" + Path + data['Image'] + "' alt='" + Name + "'><br>"; --------------need to get working ------------------
+	Content += "<p>An alert box will let you know when your file has been transcoded if it is not a .mp4</p><br>";
+	Content += "<br><img id='Thumb' src='" + data.Image + "' alt='" + Name + "'><br>";
 	Content += "</br><button type='button' name='Upload' value='' id='Restart' class='btn btn-primary btn-xl page-scroll'>Upload Another</button>"; //sets a button to allow the user to upload again
 	document.getElementById('UploadArea').innerHTML = Content; //set the content to the div
 	document.getElementById('Restart').addEventListener('click', Refresh); //make the refresh button direct to the refresh function
-	//document.getElementById('Restart').style.left = '20px';
 });
 
+socket.on('TRANSCODE', function(data)
+{
+	alert("The file uploaded "+data.name+" uploaded to "+data.path+" has been transcode and now can be viewed");
+});
 //If the user wants to upload another refresh the page
 function Refresh()
 {
+	socket.emit("CLEAN_UP", {});
 	location.reload(true); //refresh the page
 }
 
