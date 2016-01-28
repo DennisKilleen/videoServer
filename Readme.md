@@ -10,6 +10,7 @@ Then run the command "npm install".
 Next run the command "node app.js".   
 
 ## Usage
+**Currently untested on Ubuntu or Mac. Will test soon.**  
 Open the browser of your choice.  
 If you are on the machine this software is running on, in the address bar on your browser enter in the address 'localhost:9000'.  
 If you are not on the same machine this software is runnning on make sure your device is on the same WiFi network and open your browser and enter the address 'YourIp:9000'.  
